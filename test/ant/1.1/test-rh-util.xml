@@ -741,6 +741,53 @@
 
 	<!-- =========================================================================================== -->
 
+    <target name="test-find-value-in-files">
+        <property name="test-find-value-in-files.ROOT_DIR" value="${test-rh-util.dir}/test-find-value-in-files"/>
+        <mkdir dir="${test-find-value-in-files.ROOT_DIR}"/>
+
+        <echo file="${test-find-value-in-files.ROOT_DIR}/file1.txt">
+            Hello world
+            This is it
+            @myKey file1-value-1-1
+            Wow
+            @myKey file1-value-2-1 file1-value-2-2
+        </echo>
+
+        <echo file="${test-find-value-in-files.ROOT_DIR}/file2.txt">
+            /**
+            * @myKey file2-value-1-1
+            *@myKey file2-value-2-1
+            * Hello world
+            * This is it
+            * Wow
+            */
+        </echo>
+
+        <echo file="${test-find-value-in-files.ROOT_DIR}/file3.txt">
+            /**
+            * Hello world
+            * This is it
+            * Wow
+            */
+        </echo>
+
+        <echo file="${test-find-value-in-files.ROOT_DIR}/file4.txt">
+            Hello world
+            This is it
+            Wow
+        </echo>
+
+        <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="@myKey" valuesFound="test-find-value-in-files.VALUES"/>
+
+        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-1-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-2-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-2-2"/>
+        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-1-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-2-1"/>
+	</target>
+
+	<!-- =========================================================================================== -->
+
 	<target name="test-git-status">
 		<!--
 			TO DO!!!!
