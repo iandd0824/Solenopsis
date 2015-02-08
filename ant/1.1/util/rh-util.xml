@@ -1138,7 +1138,15 @@
                 }
             }
 
+            boolean isDirProcessable(File baseDir) {
+                return baseDir.isDirectory() && baseDir.exists();
+            }
+
             String getValuesForKey(File baseDir, String key) {
+                if (!isDirProcessable(baseDir)) {
+                    return "";
+                }
+
                 StringBuilder sb = new StringBuilder();
 
                 computeValuesForKey(baseDir, baseDir.list(), key, sb);

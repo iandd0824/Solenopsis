@@ -784,6 +784,19 @@
         <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-2-2"/>
         <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-1-1"/>
         <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-2-1"/>
+
+        <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="@bogusKey" valuesFound="test-find-value-in-files.BOGUS_VALUES"/>
+        <au:assertEquals message="Should be empty for bogus key!  [${test-find-value-in-files.BOGUS_VALUES}]" expected="" actual="${test-find-value-in-files.BOGUS_VALUES}"/>
+
+        <rh-util:find-value-in-files baseDir="{test-find-value-in-files.ROOT_DIR}/file1.txt" key="@myKey" valuesFound="test-find-value-in-files.VALUES_FOR_FILE"/>
+        <au:assertEquals message="Should be empty when using a file!  [${test-find-value-in-files.VALUES_FOR_FILE}]" expected="" actual="${test-find-value-in-files.VALUES_FOR_FILE}"/>
+
+        <mkdir dir="${test-find-value-in-files.ROOT_DIR}/emptyDir"/>
+        <rh-util:find-value-in-files baseDir="{test-find-value-in-files.ROOT_DIR}/emptyDir" key="@myKey" valuesFound="test-find-value-in-files.VALUES_FOR_EMPTY_DIR"/>
+        <au:assertEquals message="Should be empty when using an empty dir!  [${test-find-value-in-files.VALUES_FOR_EMPTY_DIR}]" expected="" actual="${test-find-value-in-files.VALUES_FOR_EMPTY_DIR}"/>
+
+        <rh-util:find-value-in-files baseDir="{test-find-value-in-files.ROOT_DIR}/bogusDir" key="@myKey" valuesFound="test-find-value-in-files.VALUES_FOR_BOGUS_DIR"/>
+        <au:assertEquals message="Should be empty when using a nonexistent dir!  [${test-find-value-in-files.VALUES_FOR_BOGUS_DIR}]" expected="" actual="${test-find-value-in-files.VALUES_FOR_BOGUS_DIR}"/>
 	</target>
 
 	<!-- =========================================================================================== -->
