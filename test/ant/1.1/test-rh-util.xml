@@ -777,13 +777,26 @@
             Wow
         </echo>
 
-        <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="@myKey" valuesFound="test-find-value-in-files.VALUES"/>
+        <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="@myKey" valuesFound="test-find-value-in-files.NON_WHITE_SPACE_VALUES"/>
 
-        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-1-1"/>
-        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-2-1"/>
-        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file1-value-2-2"/>
-        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-1-1"/>
-        <au:assertPropertyContains name="test-find-value-in-files.VALUES" value="file2-value-2-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.NON_WHITE_SPACE_VALUES" value="file1-value-1-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.NON_WHITE_SPACE_VALUES" value="file1-value-2-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.NON_WHITE_SPACE_VALUES" value="file1-value-2-2"/>
+        <au:assertPropertyContains name="test-find-value-in-files.NON_WHITE_SPACE_VALUES" value="file2-value-1-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.NON_WHITE_SPACE_VALUES" value="file2-value-2-1"/>
+
+        <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="(\s)*(\s)\*(\s)*@myKey" valuesFound="test-find-value-in-files.WHITE_SPACE_VALUES"/>
+
+        <au:assertFalse>
+            <contains string="${test-find-value-in-files.WHITE_SPACE_VALUES}" substring="file1-value-1-1"/>
+        </au:assertFalse>
+
+        <au:assertFalse>
+            <contains string="${test-find-value-in-files.WHITE_SPACE_VALUES}" substring="file1-value-2-2"/>
+        </au:assertFalse>
+
+        <au:assertPropertyContains name="test-find-value-in-files.WHITE_SPACE_VALUES" value="file2-value-1-1"/>
+        <au:assertPropertyContains name="test-find-value-in-files.WHITE_SPACE_VALUES" value="file2-value-2-1"/>
 
         <rh-util:find-value-in-files baseDir="${test-find-value-in-files.ROOT_DIR}" key="@bogusKey" valuesFound="test-find-value-in-files.BOGUS_VALUES"/>
         <au:assertEquals message="Should be empty for bogus key!  [${test-find-value-in-files.BOGUS_VALUES}]" expected="" actual="${test-find-value-in-files.BOGUS_VALUES}"/>
