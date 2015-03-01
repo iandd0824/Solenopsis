@@ -1413,19 +1413,6 @@ ${sfdc-util.SF-JAR.PATH}
 
     <!-- =========================================================================================== -->
 
-	<macrodef name="executeRunTests" backtrace="true" uri="http://www.redhat.com/sfdc" description="Execute dependent env run tests">
-		<attribute name="masterEnv"      default="${solenopsis.env.MASTER}"    description="The environment who has the test classes to run"/>
-		<attribute name="dependentEnv"   default="${solenopsis.env.DEPENDENT}" description="The dependent environment from which to run tests"/>
-        <attribute name="dir"                                                  description="The directory containing what to deploy"/>
-		<attribute name="trace"          default="${sf.trace}"                 description="Trace the call to SFDC on deploy"/>
-		<attribute name="maxPoll"        default="${sf.maxPoll}"               description="The number of times to poll the SFDC environment when deploying"/>
-		<attribute name="ignoreWarnings" default="${sf.ignoreWarnings}"        description="Flag, if true, denotes that a deployment should succeed even if there are warnings when deploying"/>
-		<attribute name="checkOnly"      default="${sf.checkOnly}"             description="Flag, if true, denotes check the validity of the deployed files without making any changes in the organization"/>
-		<attribute name="logType"        default="${sf.logType}"               description="Debugging level for running tests.  Can be None, Debugonly, Db, Profling, Callout or Detail"/>
-		<attribute name="testClasses"    default="${sf.testClasses}"           description="The test classes to run"/>
-        <attribute name="dryRun"         default="${sf.dryRun}"                description="If set to anything other than an empty string, will assume you do not want to deploy"/>
-		<attribute name="description"    default=""                            description="Comment regarding calling this macrodef"/>
-
 	<macrodef name="file-push" backtrace="true" uri="http://www.redhat.com/sfdc" description="This pushes a list of files from @{masterEnv} to @{dependentEnv}">
 		<attribute name="masterEnv"          default="${solenopsis.env.MASTER}"    description="The master environment who has the correct data defined"/>
 		<attribute name="dependentEnv"       default="${solenopsis.env.DEPENDENT}" description="The dependent environment from which to push"/>
@@ -1442,6 +1429,7 @@ ${sfdc-util.SF-JAR.PATH}
 		<attribute name="checkOnly"          default="${sf.checkOnly}"             description="Flag, if true, denotes check the validity of the deployed files without making any changes in the organization"/>
 		<attribute name="logType"            default="${sf.logType}"               description="Debugging level for running tests.  Can be None, Debugonly, Db, Profling, Callout or Detail"/>
         <attribute name="dryRun"             default="${sf.dryRun}"                description="If set to anything other than an empty string, will assume you do not want to deploy"/>
+        <attribute name="fastDeploy"         default="${sf.fastDeploy}"            description="If set to anything other than an empty string, will assume you want to run tests as denoted by classes annotated with @testClasses"/>
 		<attribute name="description"        default=""                            description="Comment regarding calling this macrodef"/>
 
 		<sequential>
@@ -1551,6 +1539,8 @@ ${sfdc-util.SF-JAR.PATH}
 
 			<rh-util:property name="file-push.DEPLOY_FILE" value="${file-push.tmp.DIR}/deploy.zip"/>
 
+            <rh-util:find-value-in-files baseDir="${file-push.PATH}" key="(\s)*(\s)\*(\s)*@testClasses" valuesFound="file-push.TEST_CLASSES"/>
+
 			<!--
 				If an excludes file is passed in, use that for the zip task, otherwise,
 				just call out to zip without it.  Unfortunately, zip complains if one
@@ -1581,6 +1571,7 @@ ${sfdc-util.SF-JAR.PATH}
 				</rh-util:else>
 			</rh-util:ifNotEqual>
 
+
 			<echo>
 
                 Processing:        [@{dependentEnv}]
@@ -1598,15 +1589,22 @@ ${sfdc-util.SF-JAR.PATH}
 
 			</echo>
 
-            <rh-util:ifEqual arg1="@{dryRun}" arg2="">
+            <rh-util:ifNotEqual arg1="@{sf.fastDeploy}" arg2="">
                 <rh-util:then>
-                    <sf:deploy username="${file-push.USERNAME}" password="${file-push.PASSWORD}" serverurl="${file-push.URL}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" runAllTests="@{runAllTests}" maxPoll="@{maxPoll}" allowMissingFiles="@{allowMissingFiles}" checkOnly="@{checkOnly}" logType="@{logType}" ignoreWarnings="@{ignoreWarnings}"/>
+                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES}" dryRun="@{dryRun}"/>
                 </rh-util:then>
-
                 <rh-util:else>
-                    <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
+                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
+                        <rh-util:then>
+                            <sf:deploy username="${file-push.USERNAME}" password="${file-push.PASSWORD}" serverurl="${file-push.URL}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" runAllTests="@{runAllTests}" maxPoll="@{maxPoll}" allowMissingFiles="@{allowMissingFiles}" checkOnly="@{checkOnly}" logType="@{logType}" ignoreWarnings="@{ignoreWarnings}"/>
+                        </rh-util:then>
+
+                        <rh-util:else>
+                            <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
+                        </rh-util:else>
+                    </rh-util:ifEqual>
                 </rh-util:else>
-            </rh-util:ifEqual>
+            </rh-util:ifNotEqual>
 		</sequential>
 	</macrodef>
 
@@ -1626,12 +1624,13 @@ ${sfdc-util.SF-JAR.PATH}
 		<attribute name="checkOnly"          default="${sf.checkOnly}"             description="Flag, if true, denotes check the validity of the deployed files without making any changes in the organization"/>
 		<attribute name="logType"            default="${sf.logType}"               description="Debugging level for running tests.  Can be None, Debugonly, Db, Profling, Callout or Detail"/>
         <attribute name="dryRun"             default="${sf.dryRun}"                description="If set to anything other than an empty string, will assume you do not want to deploy"/>
+        <attribute name="fastDeploy"         default="${sf.fastDeploy}"            description="If set to anything other than an empty string, will assume you want to run tests as denoted by classes annotated with @testClasses"/>
 		<attribute name="description"        default=""                            description="Comment regarding calling this macrodef"/>
 
         <sequential>
             <rh-util:dirDiff src="${solenopsis.env.@{masterEnv}.HOME}" dest="${solenopsis.env.@{dependentEnv}.HOME}" addProperty="delta-push.ADD" modProperty="delta-push.MOD" delProperty="delta-push.DEL" delimiter="@{fileDelimiter}" ignorePattern="meta.xml"/>
 
-            <rh-sfdc:file-push masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" addFileList="${delta-push.ADD}@{fileDelimiter}${delta-push.MOD}" removeFileList="${delta-push.DEL}" fileDelimiter="@{fileDelimiter}" trace="@{trace}" runAllTests="@{runAllTests}" maxPoll="@{maxPoll}" allowMissingFiles="@{allowMissingFiles}" replaceVarsFile="@{replaceVarsFile}" ignoreWarnings="@{ignoreWarnings}" ignoreFile="@{ignoreFile}" checkOnly="@{checkOnly}" logType="@{logType}" dryRun="@{dryRun}"/>
+            <rh-sfdc:file-push masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" addFileList="${delta-push.ADD}@{fileDelimiter}${delta-push.MOD}" removeFileList="${delta-push.DEL}" fileDelimiter="@{fileDelimiter}" trace="@{trace}" runAllTests="@{runAllTests}" maxPoll="@{maxPoll}" allowMissingFiles="@{allowMissingFiles}" replaceVarsFile="@{replaceVarsFile}" ignoreWarnings="@{ignoreWarnings}" ignoreFile="@{ignoreFile}" checkOnly="@{checkOnly}" logType="@{logType}" dryRun="@{dryRun}" fastDeploy="@{fastDeploy}"/>
         </sequential>
     </macrodef>
 
@@ -1866,7 +1865,7 @@ ${sfdc-util.SF-JAR.PATH}
 	<macrodef name="executeRunTests" backtrace="true" uri="http://www.redhat.com/sfdc" description="Execute dependent env run tests">
 		<attribute name="masterEnv"      default="${solenopsis.env.MASTER}"    description="The environment who has the test classes to run"/>
 		<attribute name="dependentEnv"   default="${solenopsis.env.DEPENDENT}" description="The dependent environment from which to run tests"/>
-        <attribute name="dir"                                                  description="The directory containing what to deploy"/>
+        <attribute name="zipFile"                                              description="The file to deploy"/>
 		<attribute name="trace"          default="${sf.trace}"                 description="Trace the call to SFDC on deploy"/>
 		<attribute name="maxPoll"        default="${sf.maxPoll}"               description="The number of times to poll the SFDC environment when deploying"/>
 		<attribute name="ignoreWarnings" default="${sf.ignoreWarnings}"        description="Flag, if true, denotes that a deployment should succeed even if there are warnings when deploying"/>
@@ -1879,40 +1878,9 @@ ${sfdc-util.SF-JAR.PATH}
 		<sequential>
 			<rh-sfdc:compute-env-values env="@{dependentEnv}" username="executeRunTests.USERNAME" webServicePassword="executeRunTests.PASSWORD" url="executeRunTests.URL" version="executeRunTests.VERSION" generate-tests="executeRunTests.GENERATE_TESTS"/>
 
-            <rh-util:property name="executeRunTests.DEPLOY_FILE" value="@{dir}/deploy.zip"/>
-
-			<zip destfile="${executeRunTests.DEPLOY_FILE}" basedir="${executeRunTests.tmp.DIR}" level="9"/>
-
-			<!--
-				if no test classes, we will run all tests.  Otherwise we will run the test classes denoted...
-			-->
-			<rh-util:ifEqual arg1="@{testClasses}" arg2="">
-				<rh-util:then>
-					<rh-util:ifEqual arg1="${executeRunTests.GENERATE_TESTS}" arg2="true">
-						<rh-util:then>
-							<rh-util:baseName-findFilesContaining dir="${solenopsis.env.@{masterEnv}.HOME}/classes" property="executeRunTests.TEST_CLASSES" value="testMethod" delimiter="," suffix=".cls">
-								<include name="*.cls"/>
-							</rh-util:baseName-findFilesContaining>
-						</rh-util:then>
-
-						<rh-util:else>
-							<rh-util:ifEqual arg1="@{testClasses}" arg2="">
-								<rh-util:then>
-									<rh-util:property name="executeRunTests.TEST_CLASSES" value=""/>
-								</rh-util:then>
-								<rh-util:else>
-									<rh-util:property name="executeRunTests.TEST_CLASSES" value="@{testClasses}"/>
-								</rh-util:else>
-							</rh-util:ifEqual>
-						</rh-util:else>
-
-					</rh-util:ifEqual>
-				</rh-util:then>
-
-				<rh-util:else>
-					<rh-util:property name="executeRunTests.TEST_CLASSES" value="@{testClasses}"/>
-				</rh-util:else>
-			</rh-util:ifEqual>
+			<rh-util:property name="executeRunTests.tmp.DIR" value="${solenopsis.temp.DIR}/executeRunTests"/>
+			<delete dir="${executeRunTests.tmp.DIR}"/>
+			<mkdir dir="${executeRunTests.tmp.DIR}"/>
 
 			<echo>
 
@@ -1923,56 +1891,37 @@ ${sfdc-util.SF-JAR.PATH}
 
 				Jar:          [${sf.migrationToolJar}]
 
-				Test Classes: [${executeRunTests.TEST_CLASSES}]
+				Test Classes: [@{testClasses}]
 
 			</echo>
 
-			<!--
-				if no test classes, we will run all tests.  Otherwise we will run the test classes denoted...
-			-->
-			<rh-util:ifEqual arg1="${executeRunTests.TEST_CLASSES}" arg2="">
-				<rh-util:then>
-                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
-                        <rh-util:then>
-                            <sf:deploy username="${executeRunTests.USERNAME}" password="${executeRunTests.PASSWORD}" serverurl="${executeRunTests.URL}" zipFile="${executeRunTests.DEPLOY_FILE}" trace="@{trace}" runAllTests="true" maxPoll="@{maxPoll}" allowMissingFiles="true" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}"/>
-                        </rh-util:then>
+            <ac:var name="sfdc_util.executeRunTests.BUILD" unset="true"/>
+            <rh-util:xmlStartElement property="sfdc_util.executeRunTests.BUILD" name="project" attributes="xmlns:sf='antlib:com.salesforce' xmlns:ac='http://ant-contrib.sourceforge.net'" elementDelimiter="${line.separator}"/>
+            <rh-util:xmlStartElement property="sfdc_util.executeRunTests.BUILD" name="sf:deploy" attributes="username='${executeRunTests.USERNAME}' password='${executeRunTests.PASSWORD}' serverurl='${executeRunTests.URL}' zipFile='@{zipFile}' trace='@{trace}' maxPoll='@{maxPoll}' allowMissingFiles='true' ignoreWarnings='@{ignoreWarnings}' checkOnly='@{checkOnly}' logType='@{logType}' runAllTests='false'" elementDelimiter="${line.separator}"/>
+                <rh-util:processList param="executeRunTests.TEST" list="@{testClasses}" listDelimiter=",">
+                        <rh-util:baseName property="executeRunTests.BASENAME" file="@{executeRunTests.TEST}" suffix=".cls"/>
+                        <rh-util:xmlElement property="sfdc_util.executeRunTests.BUILD" name="runTest" value="${executeRunTests.BASENAME}" elementDelimiter="${line.separator}"/>
+                    </rh-util:processList>
+                <rh-util:xmlEndElement property="sfdc_util.executeRunTests.BUILD" name="sf:deploy" elementDelimiter="${line.separator}"/>
+            <rh-util:xmlEndElement property="sfdc_util.executeRunTests.BUILD" name="project" elementDelimiter="${line.separator}"/>
 
-                        <rh-util:else>
-                            <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
-                        </rh-util:else>
-                    </rh-util:ifEqual>
-				</rh-util:then>
+            <echo file="${executeRunTests.tmp.DIR}/runtests.xml" message="${sfdc_util.executeRunTests.BUILD}"/>
 
-				<rh-util:else>
-					<ac:var name="sfdc_util.executeRunTests.BUILD" unset="true"/>
-					<rh-util:xmlStartElement property="sfdc_util.executeRunTests.BUILD" name="project" attributes="xmlns:sf='antlib:com.salesforce' xmlns:ac='http://ant-contrib.sourceforge.net'" elementDelimiter="${line.separator}"/>
-						<rh-util:xmlStartElement property="sfdc_util.executeRunTests.BUILD" name="sf:deploy" attributes="username='${executeRunTests.USERNAME}' password='${executeRunTests.PASSWORD}' serverurl='${executeRunTests.URL}' zipFile='${executeRunTests.DEPLOY_FILE}' trace='@{trace}' maxPoll='@{maxPoll}' allowMissingFiles='true' ignoreWarnings='@{ignoreWarnings}' checkOnly='@{checkOnly}' logType='@{logType}' runAllTests='false'" elementDelimiter="${line.separator}"/>
-							<rh-util:processList param="executeRunTests.TEST" list="${executeRunTests.TEST_CLASSES}" listDelimiter=",">
-								<rh-util:baseName property="executeRunTests.BASENAME" file="@{executeRunTests.TEST}" suffix=".cls"/>
-								<rh-util:xmlElement property="sfdc_util.executeRunTests.BUILD" name="runTest" value="${executeRunTests.BASENAME}" elementDelimiter="${line.separator}"/>
-							</rh-util:processList>
-						<rh-util:xmlEndElement property="sfdc_util.executeRunTests.BUILD" name="sf:deploy" elementDelimiter="${line.separator}"/>
-					<rh-util:xmlEndElement property="sfdc_util.executeRunTests.BUILD" name="project" elementDelimiter="${line.separator}"/>
+            <!-- Escape any ampersands -->
+            <replace file="${executeRunTests.tmp.DIR}/runtests.xml">
+                <replacetoken><![CDATA[&]]></replacetoken>
+                <replacevalue><![CDATA[&amp;]]></replacevalue>
+            </replace>
 
-					<echo file="${executeRunTests.tmp.DIR}/runtests.xml" message="${sfdc_util.executeRunTests.BUILD}"/>
+            <rh-util:ifEqual arg1="@{dryRun}" arg2="">
+                <rh-util:then>
+                    <ant antfile="${executeRunTests.tmp.DIR}/runtests.xml"/>
+                </rh-util:then>
 
-					<!-- Escape any ampersands -->
-					<replace file="${executeRunTests.tmp.DIR}/runtests.xml">
-						<replacetoken><![CDATA[&]]></replacetoken>
-						<replacevalue><![CDATA[&amp;]]></replacevalue>
-					</replace>
-
-                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
-                        <rh-util:then>
-                            <ant antfile="${executeRunTests.tmp.DIR}/runtests.xml"/>
-                        </rh-util:then>
-
-                        <rh-util:else>
-                            <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
-                        </rh-util:else>
-                    </rh-util:ifEqual>
-				</rh-util:else>
-			</rh-util:ifEqual>
+                <rh-util:else>
+                    <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
+                </rh-util:else>
+            </rh-util:ifEqual>
 		</sequential>
 	</macrodef>
 
@@ -2036,7 +1985,14 @@ ${sfdc-util.SF-JAR.PATH}
 				</rh-util:else>
 			</rh-util:ifEqual>
 
-			<echo>
+			<!--
+				if no test classes, we will run all tests.  Otherwise we will run the test classes denoted...
+			-->
+			<rh-util:ifEqual arg1="${runTests.TEST_CLASSES}" arg2="">
+				<rh-util:then>
+                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
+                        <rh-util:then>
+                            <echo>
 
 				Processing:   [@{dependentEnv}]
 
@@ -2045,17 +2001,10 @@ ${sfdc-util.SF-JAR.PATH}
 
 				Jar:          [${sf.migrationToolJar}]
 
-				Test Classes: [${runTests.TEST_CLASSES}]
+				Test Classes: *** ALL TESTS ***
 
-			</echo>
+                            </echo>
 
-			<!--
-				if no test classes, we will run all tests.  Otherwise we will run the test classes denoted...
-			-->
-			<rh-util:ifEqual arg1="${runTests.TEST_CLASSES}" arg2="">
-				<rh-util:then>
-                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
-                        <rh-util:then>
                             <sf:deploy username="${runTests.USERNAME}" password="${runTests.PASSWORD}" serverurl="${runTests.URL}" zipFile="${runTests.DEPLOY_FILE}" trace="@{trace}" runAllTests="true" maxPoll="@{maxPoll}" allowMissingFiles="true" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}"/>
                         </rh-util:then>
 
@@ -2066,33 +2015,7 @@ ${sfdc-util.SF-JAR.PATH}
 				</rh-util:then>
 
 				<rh-util:else>
-					<ac:var name="sfdc_util.runTests.BUILD" unset="true"/>
-					<rh-util:xmlStartElement property="sfdc_util.runTests.BUILD" name="project" attributes="xmlns:sf='antlib:com.salesforce' xmlns:ac='http://ant-contrib.sourceforge.net'" elementDelimiter="${line.separator}"/>
-						<rh-util:xmlStartElement property="sfdc_util.runTests.BUILD" name="sf:deploy" attributes="username='${runTests.USERNAME}' password='${runTests.PASSWORD}' serverurl='${runTests.URL}' zipFile='${runTests.DEPLOY_FILE}' trace='@{trace}' maxPoll='@{maxPoll}' allowMissingFiles='true' ignoreWarnings='@{ignoreWarnings}' checkOnly='@{checkOnly}' logType='@{logType}' runAllTests='false'" elementDelimiter="${line.separator}"/>
-							<rh-util:processList param="runTests.TEST" list="${runTests.TEST_CLASSES}" listDelimiter=",">
-								<rh-util:baseName property="runTests.BASENAME" file="@{runTests.TEST}" suffix=".cls"/>
-								<rh-util:xmlElement property="sfdc_util.runTests.BUILD" name="runTest" value="${runTests.BASENAME}" elementDelimiter="${line.separator}"/>
-							</rh-util:processList>
-						<rh-util:xmlEndElement property="sfdc_util.runTests.BUILD" name="sf:deploy" elementDelimiter="${line.separator}"/>
-					<rh-util:xmlEndElement property="sfdc_util.runTests.BUILD" name="project" elementDelimiter="${line.separator}"/>
-
-					<echo file="${runTests.tmp.DIR}/runtests.xml" message="${sfdc_util.runTests.BUILD}"/>
-
-					<!-- Escape any ampersands -->
-					<replace file="${runTests.tmp.DIR}/runtests.xml">
-						<replacetoken><![CDATA[&]]></replacetoken>
-						<replacevalue><![CDATA[&amp;]]></replacevalue>
-					</replace>
-
-                    <rh-util:ifEqual arg1="@{dryRun}" arg2="">
-                        <rh-util:then>
-                            <ant antfile="${runTests.tmp.DIR}/runtests.xml"/>
-                        </rh-util:then>
-
-                        <rh-util:else>
-                            <echo message="Dry run set to [@{dryRun}] - not deploying!"/>
-                        </rh-util:else>
-                    </rh-util:ifEqual>
+                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${runTests.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${runTests.TEST_CLASSES}" dryRun="@{dryRun}"/>
 				</rh-util:else>
 			</rh-util:ifEqual>
 		</sequential>
