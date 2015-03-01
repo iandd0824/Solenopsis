@@ -1099,7 +1099,7 @@
             }
 
             boolean isFound(String[] values) {
-                return values.length > 0;
+                return null != values && values.length > 1;
             }
 
             void appendValue(String value, StringBuilder sb) {
@@ -1112,30 +1112,20 @@
 
             void computeValueForLine(String[] values, StringBuilder sb) {
                 if (!isFound(values)) {
-                    continue;
-                }
-
-                System.out.println("Examining:");
-                for(String val:values) {
-                    System.out.println("   " + val);
-                    }
-
-                appendValue(values[0].trim(), sb);
-            }
-
-            void computeValuesForKey(String[] keySplit, StringBuilder sb) {
-                if(!isFound(keySplit)) {
                     return;
                 }
 
-                for (String keys : keySplit) {
-                    computeValueForLine(keys.split(System.getProperty("line.separator")), sb);
+                appendValue(values[1].trim(), sb);
+            }
+
+            void computeValuesForKey(String[] lines, String key, StringBuilder sb) {
+                for (String line : lines) {
+                    computeValueForLine(line.split(key), sb);
                 }
             }
 
             void computeValuesForKey(File file, String key, StringBuilder sb) {
-                System.out.println("SPLITTING [" + key + "]");
-                computeValuesForKey(getFileContents(file).split(key), sb);
+                computeValuesForKey(getFileContents(file).split(System.getProperty("line.separator")), key, sb);
             }
 
             void computeValuesForKey(File baseDir, String[] files, String key, StringBuilder sb) {

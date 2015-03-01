@@ -1539,15 +1539,8 @@ ${sfdc-util.SF-JAR.PATH}
 
 			<rh-util:property name="file-push.DEPLOY_FILE" value="${file-push.tmp.DIR}/deploy.zip"/>
 
-            <!--
-            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/classes" key="(\\s)*(\\s)*(\\*)(\\s)*@testClasses" valuesFound="file-push.TEST_CLASSES"/>
-            -->
-            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/classes" key=": @testClasses" valuesFound="file-push.TEST_CLASSES"/>
-            <fail message = "DIR [${file-push.tmp.DIR}/classes]"/>
-            <!--
-            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/triggers" key="(\s)*(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_TRIGGERS"/>
-            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/foo" key="(\s)*(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_FOO"/>
-            -->
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/classes"  key="(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_CLASSES"/>
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/triggers" key="(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_TRIGGERS"/>
 
 			<!--
 				If an excludes file is passed in, use that for the zip task, otherwise,
@@ -1597,12 +1590,9 @@ ${sfdc-util.SF-JAR.PATH}
 
 			</echo>
 
-            <rh-util:ifNotEqual arg1="@{sf.fastDeploy}" arg2="">
+            <rh-util:ifDefinedValue value="@{fastDeploy}">
                 <rh-util:then>
-                    <!--
-                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES} ${file-push.TEST_TRIGGERS} ${file-push.TEST_FOO}" dryRun="@{dryRun}"/>
-                    -->
-                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES}" dryRun="@{dryRun}"/>
+                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES} ${file-push.TEST_TRIGGERS}" delimiter=" " dryRun="@{dryRun}"/>
                 </rh-util:then>
                 <rh-util:else>
                     <rh-util:ifEqual arg1="@{dryRun}" arg2="">
@@ -1615,7 +1605,7 @@ ${sfdc-util.SF-JAR.PATH}
                         </rh-util:else>
                     </rh-util:ifEqual>
                 </rh-util:else>
-            </rh-util:ifNotEqual>
+            </rh-util:ifDefinedValue>
 		</sequential>
 	</macrodef>
 
@@ -1883,6 +1873,7 @@ ${sfdc-util.SF-JAR.PATH}
 		<attribute name="checkOnly"      default="${sf.checkOnly}"             description="Flag, if true, denotes check the validity of the deployed files without making any changes in the organization"/>
 		<attribute name="logType"        default="${sf.logType}"               description="Debugging level for running tests.  Can be None, Debugonly, Db, Profling, Callout or Detail"/>
 		<attribute name="testClasses"    default="${sf.testClasses}"           description="The test classes to run"/>
+        <attribute name="delimiter"      default=","                           description="Test class delimiter"/>
         <attribute name="dryRun"         default="${sf.dryRun}"                description="If set to anything other than an empty string, will assume you do not want to deploy"/>
 		<attribute name="description"    default=""                            description="Comment regarding calling this macrodef"/>
 
