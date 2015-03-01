@@ -1539,7 +1539,15 @@ ${sfdc-util.SF-JAR.PATH}
 
 			<rh-util:property name="file-push.DEPLOY_FILE" value="${file-push.tmp.DIR}/deploy.zip"/>
 
-            <rh-util:find-value-in-files baseDir="${file-push.PATH}" key="(\s)*(\s)\*(\s)*@testClasses" valuesFound="file-push.TEST_CLASSES"/>
+            <!--
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/classes" key="(\\s)*(\\s)*(\\*)(\\s)*@testClasses" valuesFound="file-push.TEST_CLASSES"/>
+            -->
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/classes" key=": @testClasses" valuesFound="file-push.TEST_CLASSES"/>
+            <fail message = "DIR [${file-push.tmp.DIR}/classes]"/>
+            <!--
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/triggers" key="(\s)*(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_TRIGGERS"/>
+            <rh-util:find-value-in-files baseDir="${file-push.tmp.DIR}/foo" key="(\s)*(\s)*\*(\s)*@testClasses" valuesFound="file-push.TEST_FOO"/>
+            -->
 
 			<!--
 				If an excludes file is passed in, use that for the zip task, otherwise,
@@ -1591,6 +1599,9 @@ ${sfdc-util.SF-JAR.PATH}
 
             <rh-util:ifNotEqual arg1="@{sf.fastDeploy}" arg2="">
                 <rh-util:then>
+                    <!--
+                    <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES} ${file-push.TEST_TRIGGERS} ${file-push.TEST_FOO}" dryRun="@{dryRun}"/>
+                    -->
                     <rh-sfdc:executeRunTests masterEnv="@{masterEnv}" dependentEnv="@{dependentEnv}" zipFile="${file-push.DEPLOY_FILE}" trace="@{trace}" maxPoll="@{maxPoll}" ignoreWarnings="@{ignoreWarnings}" checkOnly="@{checkOnly}" logType="@{logType}" testClasses="${file-push.TEST_CLASSES}" dryRun="@{dryRun}"/>
                 </rh-util:then>
                 <rh-util:else>

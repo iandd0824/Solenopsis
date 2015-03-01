@@ -1115,6 +1115,11 @@
                     continue;
                 }
 
+                System.out.println("Examining:");
+                for(String val:values) {
+                    System.out.println("   " + val);
+                    }
+
                 appendValue(values[0].trim(), sb);
             }
 
@@ -1129,6 +1134,7 @@
             }
 
             void computeValuesForKey(File file, String key, StringBuilder sb) {
+                System.out.println("SPLITTING [" + key + "]");
                 computeValuesForKey(getFileContents(file).split(key), sb);
             }
 
